@@ -23,6 +23,96 @@ func NewClient(apiKey, environment string) *Client {
 	}
 }
 
+func (c *Client) CreateAPIUser(referenceID, callbackHost string) error {
+	url := fmt.Sprintf("%s/provisioning/v1_0/apiuser", baseURL)
+	reqBody, err := json.Marshal(map[string]string{"providerCallbackHost": callbackHost})
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("X-Reference-Id", referenceID)
+	req.Header.Set("Ocp-Apim-Subscription-Key", c.ApiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("failed to create API user, status code: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+func (c *Client) CreateAPIKey(referenceID string) (string, error) {
+	url := fmt.Sprintf("%s/provisioning/v1_0/apiuser/%s/apikey", baseURL, referenceID)
+	req, err := http.NewRequest("POST", url, nil)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Ocp-Apim-Subscription-Key", c.ApiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return "", fmt.Errorf("failed to create API key, status code: %d", resp.StatusCode)
+	}
+
+	var result struct {
+		APIKey string `json:"apiKey"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", err
+	}
+
+	return result.APIKey, nil
+}
+
+func (c *Client) GetAPIUserDetails(referenceID string) (map[string]string, error) {
+	url := fmt.Sprintf("%s/provisioning/v1_0/apiuser/%s", baseURL, referenceID)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Ocp-Apim-Subscription-Key", c.ApiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get API user details, status code: %d", resp.StatusCode)
+	}
+
+	var result map[string]string
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func (c *Client) GetAuthToken() (*AuthToken, error) {
 	url := fmt.Sprintf("%s/collection/token/", baseURL)
 	req, err := http.NewRequest("POST", url, nil)

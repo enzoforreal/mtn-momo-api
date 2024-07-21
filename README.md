@@ -22,35 +22,52 @@ import (
 )
 
 func main() {
-    // Create a new client with your API key and target environment
     client := momo.NewClient("your-api-key", "sandbox")
 
-    // Obtain an authentication token
+    // Create API User
+    referenceID := "your-reference-id"
+    err := client.CreateAPIUser(referenceID, "your-callback-host")
+    if err != nil {
+        log.Fatalf("Error creating API user: %v", err)
+    }
+    fmt.Println("API user created successfully")
+
+    // Create API Key
+    apiKey, err := client.CreateAPIKey(referenceID)
+    if err != nil {
+        log.Fatalf("Error creating API key: %v", err)
+    }
+    fmt.Printf("API key created successfully: %s\n", apiKey)
+
+    // Get API User Details
+    userDetails, err := client.GetAPIUserDetails(referenceID)
+    if err != nil {
+        log.Fatalf("Error getting API user details: %v", err)
+    }
+    fmt.Printf("API user details: %v\n", userDetails)
+
+    // Authenticate and get access token
     token, err := client.GetAuthToken()
     if err != nil {
         log.Fatalf("Error obtaining auth token: %v", err)
     }
-
-    // Display the authentication token for confirmation
     fmt.Printf("Authentication token: %s\n", token.AccessToken)
 
-    // Get the balance of your account
+    // Get account balance
     balance, err := client.GetAccountBalance(token.AccessToken)
     if err != nil {
         log.Fatalf("Error getting account balance: %v", err)
     }
-
-    // Display the available balance
     fmt.Printf("Available balance: %s %s\n", balance.AvailableBalance, balance.Currency)
 
     // Create a payment request
     request := momo.RequestToPay{
-        Amount:    "100",
-        Currency:  "USD",
+        Amount:     "100",
+        Currency:   "USD",
         ExternalId: "7890",
         Payer: momo.Payer{
             PartyIdType: "MSISDN",
-            PartyId: "1234567890",
+            PartyId:     "1234567890",
         },
         PayerMessage: "Payment for services",
         PayeeNote:    "Thank you for your service",
@@ -61,10 +78,9 @@ func main() {
     if err != nil {
         log.Fatalf("Error requesting payment: %v", err)
     }
-
-    // Display the payment status
     fmt.Printf("Payment status: %s\n", result.Status)
 }
+
 
 
 Explanation
@@ -81,7 +97,8 @@ This main.go file can be used as a practical example of using the library, showi
 Testing
 To run the tests, use the go test command:
 
-go test ./...
+go test -v -cover ./...
+
 
 
 License

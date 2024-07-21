@@ -8,28 +8,45 @@ import (
 )
 
 func main() {
-	// Créez un nouveau client avec votre clé API et l'environnement cible
 	client := momo.NewClient("your-api-key", "sandbox")
 
-	// Obtenez un token d'authentification
+	// Create API User
+	referenceID := "your-reference-id"
+	err := client.CreateAPIUser(referenceID, "your-callback-host")
+	if err != nil {
+		log.Fatalf("Error creating API user: %v", err)
+	}
+	fmt.Println("API user created successfully")
+
+	// Create API Key
+	apiKey, err := client.CreateAPIKey(referenceID)
+	if err != nil {
+		log.Fatalf("Error creating API key: %v", err)
+	}
+	fmt.Printf("API key created successfully: %s\n", apiKey)
+
+	// Get API User Details
+	userDetails, err := client.GetAPIUserDetails(referenceID)
+	if err != nil {
+		log.Fatalf("Error getting API user details: %v", err)
+	}
+	fmt.Printf("API user details: %v\n", userDetails)
+
+	// Authenticate and get access token
 	token, err := client.GetAuthToken()
 	if err != nil {
-		log.Fatalf("Erreur lors de l'obtention du token d'authentification: %v", err)
+		log.Fatalf("Error obtaining auth token: %v", err)
 	}
+	fmt.Printf("Authentication token: %s\n", token.AccessToken)
 
-	// Affichez le token d'authentification pour confirmation
-	fmt.Printf("Token d'authentification: %s\n", token.AccessToken)
-
-	// Obtenez le solde de votre compte
+	// Get account balance
 	balance, err := client.GetAccountBalance(token.AccessToken)
 	if err != nil {
-		log.Fatalf("Erreur lors de l'obtention du solde du compte: %v", err)
+		log.Fatalf("Error getting account balance: %v", err)
 	}
+	fmt.Printf("Available balance: %s %s\n", balance.AvailableBalance, balance.Currency)
 
-	// Affichez le solde disponible
-	fmt.Printf("Solde disponible: %s %s\n", balance.AvailableBalance, balance.Currency)
-
-	// Créez une requête de paiement
+	// Create a payment request
 	request := momo.RequestToPay{
 		Amount:     "100",
 		Currency:   "USD",
@@ -38,16 +55,14 @@ func main() {
 			PartyIdType: "MSISDN",
 			PartyId:     "1234567890",
 		},
-		PayerMessage: "Paiement pour services",
-		PayeeNote:    "Merci pour votre service",
+		PayerMessage: "Payment for services",
+		PayeeNote:    "Thank you for your service",
 	}
 
-	// Envoyez la requête de paiement
+	// Send the payment request
 	result, err := client.RequestToPay(token.AccessToken, request)
 	if err != nil {
-		log.Fatalf("Erreur lors de la demande de paiement: %v", err)
+		log.Fatalf("Error requesting payment: %v", err)
 	}
-
-	// Affichez le statut du paiement
-	fmt.Printf("Statut du paiement: %s\n", result.Status)
+	fmt.Printf("Payment status: %s\n", result.Status)
 }
