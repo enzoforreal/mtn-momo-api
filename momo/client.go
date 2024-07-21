@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 )
 
@@ -39,6 +41,7 @@ func (c *Client) CreateAPIUser(referenceID, callbackHost string) error {
 	req.Header.Set("Ocp-Apim-Subscription-Key", c.ApiKey)
 	req.Header.Set("Content-Type", "application/json")
 
+	log.Printf("Making request to %s with reference ID %s and callback host %s", url, referenceID, callbackHost)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -46,8 +49,11 @@ func (c *Client) CreateAPIUser(referenceID, callbackHost string) error {
 	}
 	defer resp.Body.Close()
 
+	body, _ := io.ReadAll(resp.Body)
+	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
+
 	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("failed to create API user, status code: %d", resp.StatusCode)
+		return fmt.Errorf("failed to create API user, status code: %d, response: %s", resp.StatusCode, string(body))
 	}
 
 	return nil
@@ -63,6 +69,7 @@ func (c *Client) CreateAPIKey(referenceID string) (string, error) {
 	req.Header.Set("Ocp-Apim-Subscription-Key", c.ApiKey)
 	req.Header.Set("Content-Type", "application/json")
 
+	log.Printf("Making request to %s to create API key for reference ID %s", url, referenceID)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -70,8 +77,11 @@ func (c *Client) CreateAPIKey(referenceID string) (string, error) {
 	}
 	defer resp.Body.Close()
 
+	body, _ := io.ReadAll(resp.Body)
+	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
+
 	if resp.StatusCode != http.StatusCreated {
-		return "", fmt.Errorf("failed to create API key, status code: %d", resp.StatusCode)
+		return "", fmt.Errorf("failed to create API key, status code: %d, response: %s", resp.StatusCode, string(body))
 	}
 
 	var result struct {
@@ -94,6 +104,7 @@ func (c *Client) GetAPIUserDetails(referenceID string) (map[string]string, error
 	req.Header.Set("Ocp-Apim-Subscription-Key", c.ApiKey)
 	req.Header.Set("Content-Type", "application/json")
 
+	log.Printf("Making request to %s to get API user details for reference ID %s", url, referenceID)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -101,8 +112,11 @@ func (c *Client) GetAPIUserDetails(referenceID string) (map[string]string, error
 	}
 	defer resp.Body.Close()
 
+	body, _ := io.ReadAll(resp.Body)
+	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
+
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get API user details, status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("failed to get API user details, status code: %d, response: %s", resp.StatusCode, string(body))
 	}
 
 	var result map[string]string
@@ -123,6 +137,7 @@ func (c *Client) GetAuthToken() (*AuthToken, error) {
 	req.Header.Set("Ocp-Apim-Subscription-Key", c.ApiKey)
 	req.Header.Set("Content-Type", "application/json")
 
+	log.Printf("Making request to %s to get auth token", url)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -130,8 +145,11 @@ func (c *Client) GetAuthToken() (*AuthToken, error) {
 	}
 	defer resp.Body.Close()
 
+	body, _ := io.ReadAll(resp.Body)
+	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
+
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get auth token, status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("failed to get auth token, status code: %d, response: %s", resp.StatusCode, string(body))
 	}
 
 	var authToken AuthToken
@@ -153,6 +171,7 @@ func (c *Client) GetAccountBalance(token string) (*Balance, error) {
 	req.Header.Set("X-Target-Environment", c.Environment)
 	req.Header.Set("Ocp-Apim-Subscription-Key", c.ApiKey)
 
+	log.Printf("Making request to %s to get account balance", url)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -160,8 +179,11 @@ func (c *Client) GetAccountBalance(token string) (*Balance, error) {
 	}
 	defer resp.Body.Close()
 
+	body, _ := io.ReadAll(resp.Body)
+	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
+
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get account balance, status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("failed to get account balance, status code: %d, response: %s", resp.StatusCode, string(body))
 	}
 
 	var balance Balance
@@ -189,6 +211,7 @@ func (c *Client) RequestToPay(token string, request RequestToPay) (*RequestToPay
 	req.Header.Set("Ocp-Apim-Subscription-Key", c.ApiKey)
 	req.Header.Set("Content-Type", "application/json")
 
+	log.Printf("Making request to %s to request to pay", url)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -196,8 +219,11 @@ func (c *Client) RequestToPay(token string, request RequestToPay) (*RequestToPay
 	}
 	defer resp.Body.Close()
 
+	body, _ := io.ReadAll(resp.Body)
+	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
+
 	if resp.StatusCode != http.StatusAccepted {
-		return nil, fmt.Errorf("failed to request to pay, status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("failed to request to pay, status code: %d, response: %s", resp.StatusCode, string(body))
 	}
 
 	var result RequestToPayResult
