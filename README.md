@@ -102,11 +102,10 @@ mtn-momo-api/
 └── .gitignore
 
 
-### Explications supplémentaires
 
-- **Installation**: Instructions claires sur la manière d'installer la bibliothèque.
-- **Usage**: Un exemple concret d'utilisation de la bibliothèque, complet avec des explications en français pour chaque étape.
-- **Testing**: Commande pour exécuter les tests unitaires.
-- **License**: Type de licence du projet.
-- **Project Structure**: Vue d'ensemble de la structure des fichiers et répertoires du projet.
 
+- **Installation**: Clear instructions on how to install the library.
+- **Usage**: A concrete example of using the library, complete with explanations in French for each step.
+- **Testing**: Command to run unit tests.
+- **License**: Project license type.
+- **Project Structure**: Overview of the structure of the project files and directories.
