@@ -16,70 +16,77 @@ Here's an example of how to use the library:
 package main
 
 import (
-    "fmt"
-    "log"
-    "github.com/enzoforreal/mtn-momo-api/momo"
+	"log"
+	"net/http"
+
+	"github.com/enzoforreal/mtn-momo-api/momo"
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func main() {
-    client := momo.NewClient("your-api-key", "sandbox")
+	client := momo.NewClient("Subscription Key", "sandbox")
 
-    // Create API User
-    referenceID := "your-reference-id"
-    err := client.CreateAPIUser(referenceID, "your-callback-host")
-    if err != nil {
-        log.Fatalf("Error creating API user: %v", err)
-    }
-    fmt.Println("API user created successfully")
+	router := gin.Default()
 
-    // Create API Key
-    apiKey, err := client.CreateAPIKey(referenceID)
-    if err != nil {
-        log.Fatalf("Error creating API key: %v", err)
-    }
-    fmt.Printf("API key created successfully: %s\n", apiKey)
+	router.POST("/create-api-user", func(c *gin.Context) {
+		var req struct {
+			ReferenceID  string `json:"reference_id"`
+			CallbackHost string `json:"callback_host"`
+		}
+		if err := c.BindJSON(&req); err != nil {
+			log.Printf("Error binding JSON: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 
-    // Get API User Details
-    userDetails, err := client.GetAPIUserDetails(referenceID)
-    if err != nil {
-        log.Fatalf("Error getting API user details: %v", err)
-    }
-    fmt.Printf("API user details: %v\n", userDetails)
+		if req.ReferenceID == "" {
+			req.ReferenceID = uuid.New().String()
+		}
 
-    // Authenticate and get access token
-    token, err := client.GetAuthToken()
-    if err != nil {
-        log.Fatalf("Error obtaining auth token: %v", err)
-    }
-    fmt.Printf("Authentication token: %s\n", token.AccessToken)
+		log.Printf("Creating API user with reference ID %s and callback host %s", req.ReferenceID, req.CallbackHost)
+		err := client.CreateAPIUser(req.ReferenceID, req.CallbackHost)
+		if err != nil {
+			log.Printf("Error creating API user: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 
-    // Get account balance
-    balance, err := client.GetAccountBalance(token.AccessToken)
-    if err != nil {
-        log.Fatalf("Error getting account balance: %v", err)
-    }
-    fmt.Printf("Available balance: %s %s\n", balance.AvailableBalance, balance.Currency)
+		log.Println("API user created successfully")
+		c.JSON(http.StatusCreated, gin.H{"message": "API user created successfully", "reference_id": req.ReferenceID})
+	})
 
-    // Create a payment request
-    request := momo.RequestToPay{
-        Amount:     "100",
-        Currency:   "USD",
-        ExternalId: "7890",
-        Payer: momo.Payer{
-            PartyIdType: "MSISDN",
-            PartyId:     "1234567890",
-        },
-        PayerMessage: "Payment for services",
-        PayeeNote:    "Thank you for your service",
-    }
+	router.POST("/create-api-key", func(c *gin.Context) {
+		var req struct {
+			ReferenceID string `json:"reference_id"`
+		}
+		if err := c.BindJSON(&req); err != nil {
+			log.Printf("Error binding JSON: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 
-    // Send the payment request
-    result, err := client.RequestToPay(token.AccessToken, request)
-    if err != nil {
-        log.Fatalf("Error requesting payment: %v", err)
-    }
-    fmt.Printf("Payment status: %s\n", result.Status)
+		if req.ReferenceID == "" {
+			log.Printf("Reference ID is missing")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Reference ID is required"})
+			return
+		}
+
+		log.Printf("Creating API key for reference ID %s", req.ReferenceID)
+		apiKey, err := client.CreateAPIKey(req.ReferenceID)
+		if err != nil {
+			log.Printf("Error creating API key: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		log.Println("API key created successfully")
+		c.JSON(http.StatusCreated, gin.H{"api_key": apiKey})
+	})
+
+	router.Run(":8080")
 }
+
 
 
 

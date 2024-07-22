@@ -26,43 +26,62 @@ func NewClient(apiKey, environment string) *Client {
 }
 
 func (c *Client) CreateAPIUser(referenceID, callbackHost string) error {
-	url := fmt.Sprintf("%s/provisioning/v1_0/apiuser", baseURL)
+	url := fmt.Sprintf("%s/v1_0/apiuser", baseURL)
+	if callbackHost == "" {
+		callbackHost = "string" // Valeur par défaut
+	}
 	reqBody, err := json.Marshal(map[string]string{"providerCallbackHost": callbackHost})
 	if err != nil {
+		log.Printf("Error marshaling request body: %v", err)
 		return err
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
 	if err != nil {
+		log.Printf("Error creating request: %v", err)
 		return err
 	}
 
 	req.Header.Set("X-Reference-Id", referenceID)
 	req.Header.Set("Ocp-Apim-Subscription-Key", c.ApiKey)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cache-Control", "no-cache")
 
 	log.Printf("Making request to %s with reference ID %s and callback host %s", url, referenceID, callbackHost)
+	log.Printf("Request headers: %v", req.Header)
+	log.Printf("Request body: %s", reqBody)
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Printf("Error making request: %v", err)
 		return err
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Error reading response body: %v", err)
+		return err
+	}
 	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
 
 	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("failed to create API user, status code: %d, response: %s", resp.StatusCode, string(body))
+		errMsg := fmt.Sprintf("failed to create API user, status code: %d, response: %s", resp.StatusCode, string(body))
+		log.Println(errMsg)
+		return fmt.Errorf(errMsg)
 	}
 
+	log.Println("API user created successfully")
 	return nil
 }
 
 func (c *Client) CreateAPIKey(referenceID string) (string, error) {
-	url := fmt.Sprintf("%s/provisioning/v1_0/apiuser/%s/apikey", baseURL, referenceID)
+	url := fmt.Sprintf("%s/v1_0/apiuser/%s/apikey", baseURL, referenceID)
+
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
+		log.Printf("Error creating request: %v", err)
 		return "", err
 	}
 
@@ -70,27 +89,38 @@ func (c *Client) CreateAPIKey(referenceID string) (string, error) {
 	req.Header.Set("Content-Type", "application/json")
 
 	log.Printf("Making request to %s to create API key for reference ID %s", url, referenceID)
+	log.Printf("Request headers: %v", req.Header)
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Printf("Error making request: %v", err)
 		return "", err
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Error reading response body: %v", err)
+		return "", err
+	}
 	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
 
 	if resp.StatusCode != http.StatusCreated {
-		return "", fmt.Errorf("failed to create API key, status code: %d, response: %s", resp.StatusCode, string(body))
+		errMsg := fmt.Sprintf("failed to create API key, status code: %d, response: %s", resp.StatusCode, string(body))
+		log.Println(errMsg)
+		return "", fmt.Errorf(errMsg)
 	}
 
 	var result struct {
 		APIKey string `json:"apiKey"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.Unmarshal(body, &result); err != nil {
+		log.Printf("Error unmarshaling response body: %v", err)
 		return "", err
 	}
 
+	log.Println("API key created successfully")
 	return result.APIKey, nil
 }
 
@@ -112,7 +142,10 @@ func (c *Client) GetAPIUserDetails(referenceID string) (map[string]string, error
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
 
 	if resp.StatusCode != http.StatusOK {
@@ -145,7 +178,10 @@ func (c *Client) GetAuthToken() (*AuthToken, error) {
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
 
 	if resp.StatusCode != http.StatusOK {
@@ -179,7 +215,10 @@ func (c *Client) GetAccountBalance(token string) (*Balance, error) {
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
 
 	if resp.StatusCode != http.StatusOK {
@@ -219,7 +258,10 @@ func (c *Client) RequestToPay(token string, request RequestToPay) (*RequestToPay
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
 
 	if resp.StatusCode != http.StatusAccepted {
