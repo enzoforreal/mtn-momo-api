@@ -2,6 +2,7 @@ package momo
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,22 +14,19 @@ var (
 	baseURL = "https://sandbox.momodeveloper.mtn.com"
 )
 
-type Client struct {
-	ApiKey      string
-	Environment string
-}
-
-func NewClient(apiKey, environment string) *Client {
+func NewClient(subscriptionKey, apiKey, apiUserID, environment string) *Client {
 	return &Client{
-		ApiKey:      apiKey,
-		Environment: environment,
+		ApiKey:          apiKey,
+		ApiUserID:       apiUserID,
+		SubscriptionKey: subscriptionKey,
+		Environment:     environment,
 	}
 }
 
 func (c *Client) CreateAPIUser(referenceID, callbackHost string) error {
 	url := fmt.Sprintf("%s/v1_0/apiuser", baseURL)
 	if callbackHost == "" {
-		callbackHost = "string" // Valeur par défaut
+		callbackHost = "string"
 	}
 	reqBody, err := json.Marshal(map[string]string{"providerCallbackHost": callbackHost})
 	if err != nil {
@@ -43,7 +41,7 @@ func (c *Client) CreateAPIUser(referenceID, callbackHost string) error {
 	}
 
 	req.Header.Set("X-Reference-Id", referenceID)
-	req.Header.Set("Ocp-Apim-Subscription-Key", c.ApiKey)
+	req.Header.Set("Ocp-Apim-Subscription-Key", c.SubscriptionKey)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Cache-Control", "no-cache")
 
@@ -85,7 +83,7 @@ func (c *Client) CreateAPIKey(referenceID string) (string, error) {
 		return "", err
 	}
 
-	req.Header.Set("Ocp-Apim-Subscription-Key", c.ApiKey)
+	req.Header.Set("Ocp-Apim-Subscription-Key", c.SubscriptionKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	log.Printf("Making request to %s to create API key for reference ID %s", url, referenceID)
@@ -124,50 +122,17 @@ func (c *Client) CreateAPIKey(referenceID string) (string, error) {
 	return result.APIKey, nil
 }
 
-func (c *Client) GetAPIUserDetails(referenceID string) (map[string]string, error) {
-	url := fmt.Sprintf("%s/provisioning/v1_0/apiuser/%s", baseURL, referenceID)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Ocp-Apim-Subscription-Key", c.ApiKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	log.Printf("Making request to %s to get API user details for reference ID %s", url, referenceID)
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get API user details, status code: %d, response: %s", resp.StatusCode, string(body))
-	}
-
-	var result map[string]string
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
 func (c *Client) GetAuthToken() (*AuthToken, error) {
 	url := fmt.Sprintf("%s/collection/token/", baseURL)
+	auth := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", c.ApiUserID, c.ApiKey)))
+
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("Ocp-Apim-Subscription-Key", c.ApiKey)
+	req.Header.Set("Authorization", fmt.Sprintf("Basic %s", auth))
+	req.Header.Set("Ocp-Apim-Subscription-Key", c.SubscriptionKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	log.Printf("Making request to %s to get auth token", url)
@@ -189,89 +154,9 @@ func (c *Client) GetAuthToken() (*AuthToken, error) {
 	}
 
 	var authToken AuthToken
-	if err := json.NewDecoder(resp.Body).Decode(&authToken); err != nil {
+	if err := json.Unmarshal(body, &authToken); err != nil {
 		return nil, err
 	}
 
 	return &authToken, nil
-}
-
-func (c *Client) GetAccountBalance(token string) (*Balance, error) {
-	url := fmt.Sprintf("%s/collection/v1_0/account/balance", baseURL)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-	req.Header.Set("X-Target-Environment", c.Environment)
-	req.Header.Set("Ocp-Apim-Subscription-Key", c.ApiKey)
-
-	log.Printf("Making request to %s to get account balance", url)
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get account balance, status code: %d, response: %s", resp.StatusCode, string(body))
-	}
-
-	var balance Balance
-	if err := json.NewDecoder(resp.Body).Decode(&balance); err != nil {
-		return nil, err
-	}
-
-	return &balance, nil
-}
-
-func (c *Client) RequestToPay(token string, request RequestToPay) (*RequestToPayResult, error) {
-	url := fmt.Sprintf("%s/collection/v1_0/requesttopay", baseURL)
-	reqBody, err := json.Marshal(request)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-	req.Header.Set("X-Target-Environment", c.Environment)
-	req.Header.Set("Ocp-Apim-Subscription-Key", c.ApiKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	log.Printf("Making request to %s to request to pay", url)
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
-
-	if resp.StatusCode != http.StatusAccepted {
-		return nil, fmt.Errorf("failed to request to pay, status code: %d, response: %s", resp.StatusCode, string(body))
-	}
-
-	var result RequestToPayResult
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
 }
