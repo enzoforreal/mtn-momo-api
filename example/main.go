@@ -131,5 +131,65 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"token": authToken.AccessToken, "expires_in": authToken.ExpiresIn})
 	})
 
+	router.POST("/get-auth-token", func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			log.Println("Authorization header missing")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization header missing"})
+			return
+		}
+
+		decodedAuth, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(authHeader, "Basic "))
+		if err != nil {
+			log.Println("Failed to decode authorization header:", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid authorization header"})
+			return
+		}
+
+		authParts := strings.SplitN(string(decodedAuth), ":", 2)
+		if len(authParts) != 2 {
+			log.Println("Invalid authorization format")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid authorization format"})
+			return
+		}
+
+		apiUserID := authParts[0]
+		apiKey := authParts[1]
+		log.Printf("Received API User ID: %s, API Key: %s\n", apiUserID, apiKey)
+
+		client := NewClient(clientConfig1)
+		authToken, err := client.GetAuthToken()
+		if err != nil {
+			log.Printf("Error getting auth token: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		log.Println("Token retrieved successfully")
+		c.JSON(http.StatusOK, gin.H{"token": authToken.AccessToken, "expires_in": authToken.ExpiresIn})
+	})
+
+	router.GET("/get-account-balance", func(c *gin.Context) {
+		client := NewClient(clientConfig1)
+		token := c.GetHeader("Authorization")
+		if token == "" {
+			log.Println("Authorization header missing")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization header missing"})
+			return
+		}
+
+		token = strings.TrimPrefix(token, "Bearer ")
+		balance, err := client.GetAccountBalance(token)
+		if err != nil {
+			log.Printf("Error getting account balance: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		log.Println("Account balance retrieved successfully")
+		c.JSON(http.StatusOK, gin.H{"balance": balance})
+	})
+
 	router.Run(":8080")
+
 }

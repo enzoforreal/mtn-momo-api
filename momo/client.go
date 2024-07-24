@@ -160,3 +160,43 @@ func (c *Client) GetAuthToken() (*AuthToken, error) {
 
 	return &authToken, nil
 }
+
+func (c *Client) GetAccountBalance(token string) (*Balance, error) {
+	url := fmt.Sprintf("%s/collection/v1_0/account/balance", baseURL)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("X-Target-Environment", c.Environment)
+	req.Header.Set("Ocp-Apim-Subscription-Key", c.SubscriptionKey)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cache-Control", "no-cache")
+
+	log.Printf("Making request to %s to get account balance", url)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get account balance, status code: %d, response: %s", resp.StatusCode, string(body))
+	}
+
+	var balance Balance
+	if err := json.NewDecoder(bytes.NewBuffer(body)).Decode(&balance); err != nil {
+		return nil, err
+	}
+
+	return &balance, nil
+}

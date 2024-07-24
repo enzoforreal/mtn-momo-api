@@ -1,13 +1,14 @@
 #!/bin/bash
 
 # Remplacez par vos propres valeurs
-REFERENCE_ID="c67802a1-8221-4f51-8bf5-64362c20c34e"
+REFERENCE_ID="b474a7fc-0446-47c2-b2eb-b3d1fe96daf0"
 
-response=$(curl -s -X POST "http://localhost:8080/create-api-key" \
+response=$(curl -v -X POST "http://localhost:8080/create-api-key" \
     -H "Content-Type: application/json" \
+    -H "Cache-Control: no-cache" \
     -d "{
           \"reference_id\": \"$REFERENCE_ID\"
         }")
 
-# Afficher la réponse
+
 echo "Response: $response"
