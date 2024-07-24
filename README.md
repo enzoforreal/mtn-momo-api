@@ -17,7 +17,7 @@ go get github.com/google/uuid
 
 Here's an example of how to use the library:
 
-```bash
+```Go
 
 package main
 
@@ -161,7 +161,7 @@ func main() {
 1. Create API User
 
 
-```bash
+```curl
 
 curl -X POST http://localhost:8080/create-api-user \
     -H "X-Reference-Id: your-X-Reference-id" \
@@ -172,8 +172,9 @@ curl -X POST http://localhost:8080/create-api-user \
         }'
 
 ```
+2. Create API Key
 
-```bash
+```curl
 
 curl -X POST http://localhost:8080/create-api-key \
     -H "Content-Type: application/json" \
@@ -183,7 +184,9 @@ curl -X POST http://localhost:8080/create-api-key \
 
 ```
 
-```bash
+3. Create Access Token
+
+```curl
 
 curl -X POST "http://localhost:8080/get-auth-token" \
     -H "Authorization: Basic your-base64-encoded-auth" \
@@ -191,8 +194,9 @@ curl -X POST "http://localhost:8080/get-auth-token" \
     -H "Ocp-Apim-Subscription-Key: Your-Subscription-Key"
 ```
 
+4. Get Account banlance
 
-```bash
+```curl
    curl -X GET http://localhost:8080/get-account-balance \
     -H "Content-Type: application/json" \
     -H "Authorization: your-access-token" \
@@ -201,7 +205,9 @@ curl -X POST "http://localhost:8080/get-auth-token" \
     -H "Ocp-Apim-Subscription-Key: Your-Subscription-Key" \
 ```
 
-```bash
+5. Create Request to pay
+
+```curl
 curl -X POST http://localhost:8080/request-to-pay \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer your-access-token" \
@@ -216,7 +222,7 @@ curl -X POST http://localhost:8080/request-to-pay \
           "payer_message": "Payment for services",
           "payee_note": "Thank you for your service"
         }'
-```
+```curl
 
 ## Explanations
 
@@ -252,7 +258,7 @@ This project is licensed under the MIT License.
 ## Project Structure
 
 
-```go
+
 
 mtn-momo-api/
 ├── LICENSE
@@ -269,11 +275,12 @@ mtn-momo-api/
 └── scripts
     ├── create-api-key.sh
     ├── create-api-user.sh
+    ├── get-account-balance .sh
     ├── test-auth-token.sh
     └── test.sh
 
 
-```
+
 
 ## Summary
 
