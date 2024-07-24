@@ -1,3 +1,6 @@
+#files
+.env
+
 # Binaries
 *.exe
 *.exe~

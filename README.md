@@ -272,6 +272,8 @@ go test -v -cover ./...
 
 Official documentation of the MTN MoMo API
 
+[Official documentation of the MTN MoMo API](https://momodeveloper.mtn.com/)
+
 License
 
 This project is licensed under the MIT License.
