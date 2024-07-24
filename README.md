@@ -222,7 +222,7 @@ curl -X POST http://localhost:8080/request-to-pay \
           "payer_message": "Payment for services",
           "payee_note": "Thank you for your service"
         }'
-```curl
+```
 
 ## Explanations
 
@@ -258,7 +258,7 @@ This project is licensed under the MIT License.
 ## Project Structure
 
 
-
+```bash
 
 mtn-momo-api/
 ├── LICENSE
@@ -278,7 +278,7 @@ mtn-momo-api/
     ├── get-account-balance .sh
     ├── test-auth-token.sh
     └── test.sh
-
+```
 
 
 
