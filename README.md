@@ -151,6 +151,27 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"token": authToken.AccessToken, "expires_in": authToken.ExpiresIn})
 	})
 
+	router.GET("/get-account-balance", func(c *gin.Context) {
+		client := NewClient(clientConfig1)
+		token := c.GetHeader("Authorization")
+		if token == "" {
+			log.Println("Authorization header missing")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization header missing"})
+			return
+		}
+
+		token = strings.TrimPrefix(token, "Bearer ")
+		balance, err := client.GetAccountBalance(token)
+		if err != nil {
+			log.Printf("Error getting account balance: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		log.Println("Account balance retrieved successfully")
+		c.JSON(http.StatusOK, gin.H{"balance": balance})
+	})
+
 	router.Run(":8080")
 }
 
