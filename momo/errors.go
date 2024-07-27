@@ -1,9 +1,12 @@
 package momo
 
-import "errors"
+import (
+	"log"
 
-var (
-	ErrAuthFailed         = errors.New("authentication failed")
-	ErrBalanceFetchFailed = errors.New("failed to fetch account balance")
-	ErrRequestToPayFailed = errors.New("request to pay failed")
+	"github.com/gin-gonic/gin"
 )
+
+func HandleError(c *gin.Context, statusCode int, err interface{}) {
+	log.Printf("Error: %v", err)
+	c.JSON(statusCode, gin.H{"error": err})
+}
