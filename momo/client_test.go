@@ -4,11 +4,28 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
+
+	"github.com/joho/godotenv"
 )
 
+func TestMain(m *testing.M) {
+	// Charger le fichier .env.test pour les tests unitaires
+	err := godotenv.Load("../test.env")
+	if err != nil {
+		panic("Error loading test.env file for tests")
+	}
+
+	// Exécuter les tests unitaires
+	code := m.Run()
+
+	// Quitter avec le code de résultat des tests
+	os.Exit(code)
+}
+
 func TestGetAuthToken(t *testing.T) {
-	client := NewClient("subscriptionKey ", "apiKey", "apiUserID  ", "sandbox")
+	client := NewClient()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -31,7 +48,7 @@ func TestGetAuthToken(t *testing.T) {
 }
 
 func TestCreateAPIUser(t *testing.T) {
-	client := NewClient("subscriptionKey ", "apiKey", "apiUserID  ", "sandbox")
+	client := NewClient()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 	}))
@@ -45,7 +62,7 @@ func TestCreateAPIUser(t *testing.T) {
 }
 
 func TestCreateAPIKey(t *testing.T) {
-	client := NewClient("subscriptionKey ", "apiKey", "apiUserID  ", "sandbox")
+	client := NewClient()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
@@ -60,5 +77,37 @@ func TestCreateAPIKey(t *testing.T) {
 	}
 	if apiKey != "test-api-key" {
 		t.Fatalf("expected API key to be 'test-api-key', got %s", apiKey)
+	}
+}
+
+func TestRequestToPay(t *testing.T) {
+	client := NewClient()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer ts.Close()
+
+	baseURL = ts.URL
+
+	token := "test-token"
+	request := RequestToPay{
+		Amount:     "100",
+		Currency:   "EUR",
+		ExternalId: "123456",
+		Payer: Payer{
+			PartyIdType: "MSISDN",
+			PartyId:     "46733123453",
+		},
+		PayerMessage: "Payment for invoice 123456",
+		PayeeNote:    "Invoice 123456 payment",
+	}
+
+	referenceID, err := client.RequestToPay(token, request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if referenceID == "" {
+		t.Fatalf("expected reference ID to be non-empty, got %s", referenceID)
 	}
 }

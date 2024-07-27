@@ -8,18 +8,29 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/google/uuid"
+	"github.com/joho/godotenv"
 )
 
 var (
 	baseURL = "https://sandbox.momodeveloper.mtn.com"
 )
 
-func NewClient(subscriptionKey, apiKey, apiUserID, environment string) *Client {
+func Init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+}
+
+func NewClient() *Client {
 	return &Client{
-		ApiKey:          apiKey,
-		ApiUserID:       apiUserID,
-		SubscriptionKey: subscriptionKey,
-		Environment:     environment,
+		ApiKey:          os.Getenv("API_KEY"),
+		ApiUserID:       os.Getenv("API_USER_ID"),
+		SubscriptionKey: os.Getenv("SUBSCRIPTION_KEY"),
+		Environment:     os.Getenv("ENVIRONMENT"),
 	}
 }
 
@@ -199,4 +210,61 @@ func (c *Client) GetAccountBalance(token string) (*Balance, error) {
 	}
 
 	return &balance, nil
+}
+
+func (c *Client) RequestToPay(token string, request RequestToPay) (string, error) {
+	url := fmt.Sprintf("%s/collection/v1_0/requesttopay", baseURL)
+	referenceID := uuid.New().String()
+
+	reqBody, err := json.Marshal(request)
+	if err != nil {
+		log.Printf("Error marshaling request body: %v", err)
+		return "", err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		log.Printf("Error creating request: %v", err)
+		return "", err
+	}
+
+	// Ajout de logs pour vérifier les valeurs des en-têtes et du jeton
+	log.Printf("Token: %s", token)
+	log.Printf("Environment: %s", c.Environment)
+	log.Printf("Subscription Key: %s", c.SubscriptionKey)
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("X-Reference-Id", referenceID)
+	req.Header.Set("X-Target-Environment", c.Environment)
+	req.Header.Set("Ocp-Apim-Subscription-Key", c.SubscriptionKey)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cache-Control", "no-cache")
+
+	log.Printf("Making request to %s with reference ID %s", url, referenceID)
+	log.Printf("Request headers: %v", req.Header)
+	log.Printf("Request body: %s", reqBody)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Error making request: %v", err)
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Error reading response body: %v", err)
+		return "", err
+	}
+	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
+
+	if resp.StatusCode != http.StatusAccepted {
+		errMsg := fmt.Sprintf("failed to request payment, status code: %d, response: %s", resp.StatusCode, string(body))
+		log.Println(errMsg)
+		return "", fmt.Errorf(errMsg)
+	}
+
+	log.Println("Payment request created successfully")
+	return referenceID, nil
 }
