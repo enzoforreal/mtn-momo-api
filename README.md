@@ -293,20 +293,24 @@ mtn-momo-api/
 ├── LICENSE
 ├── README.md
 ├── example
-│   └── main.go
+│   └── main.go
 ├── go.mod
 ├── go.sum
+├── integration.env
 ├── momo
-│   ├── client.go
-│   ├── client_test.go
-│   ├── errors.go
-│   └── models.go
-└── scripts
-    ├── create-api-key.sh
-    ├── create-api-user.sh
-    ├── get-account-balance .sh
-    ├── test-auth-token.sh
-    └── test.sh
+│   ├── client.go
+│   ├── client_test.go
+│   ├── errors.go
+│   └── models.go
+├── test.env
+└── tests
+    ├── integration
+    │   ├── create-api-key.sh
+    │   ├── create-api-user.sh
+    │   ├── get-account-balance .sh
+    │   ├── get-auth-token.sh
+    │   └── request-to-pay.sh
+    └── run_integration_tests.sh
 ```
 
 
