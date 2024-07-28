@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Chemin du fichier d'environnement
 env_file="$(dirname "$0")/../integration.env"
 
@@ -27,11 +26,11 @@ run_script() {
 }
 
 # Exécuter les scripts dans l'ordre approprié
-run_script ./tests/integration/create-api-user.sh
-run_script ./tests/integration/create-api-key.sh
+run_script "$(dirname "$0")/integration/create-api-user.sh"
+run_script "$(dirname "$0")/integration/create-api-key.sh"
 
 # Exécuter les autres scripts d'intégration
-for script in ./tests/integration/*.sh; do
+for script in "$(dirname "$0")/integration"/*.sh; do
     if [[ "$script" != *"create-api-user.sh"* && "$script" != *"create-api-key.sh"* ]]; then
         run_script "$script"
     fi

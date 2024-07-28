@@ -13,9 +13,9 @@ import (
 )
 
 func init() {
-	err := godotenv.Load()
+	err := godotenv.Load("/home/renaud/mtn-momo-api/.env")
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatalf("Error loading .env file :%v", err)
 	}
 }
 

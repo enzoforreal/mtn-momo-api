@@ -1,0 +1,96 @@
+#!/bin/bash
+# Script to execute common tasks for the momo library
+
+# Function to display the ASCII Art
+function show_ascii_art {
+    cat << "EOF"
+ __  __          __  __          
+|  \/  |        |  \/  |         
+| \  / |  ___   | \  / |  ___    
+| |\/| | / _ \  | |\/| | / _ \   
+| |  | || (_) | | |  | || (_) |  
+|_|  |_| \___/  |_|  |_| \___/   
+EOF
+}
+
+function show_help {
+    show_ascii_art
+    echo
+    echo "momo is a tool for managing the momo API."
+    echo
+    echo "Usage:"
+    echo "    momo <command> [arguments]"
+    echo
+    echo "The commands are:"
+    echo "    start       start the server"
+    echo "    test        run integration tests"
+    echo "    update      update dependencies"
+    echo
+    echo "Use 'momo help <command>' for more information about a command."
+}
+
+function start_server {
+    echo "Starting the server..."
+    cd "$(dirname "$0")/.."
+    go run example/main.go
+}
+
+function run_tests {
+    echo "Running integration tests..."
+    cd "$(dirname "$0")/../tests/integration"
+    for test_script in *.sh; do
+        bash "$test_script"
+    done
+}
+
+function update_deps {
+    echo "Updating Go dependencies..."
+    cd "$(dirname "$0")/.."
+    go get -u ./...
+    go mod tidy
+}
+
+if [[ $# -eq 0 ]]; then
+    show_help
+    exit 0
+fi
+
+case "$1" in
+    start)
+        start_server
+        ;;
+    test)
+        run_tests
+        ;;
+    update)
+        update_deps
+        ;;
+    help)
+        if [[ $# -eq 2 ]]; then
+            case "$2" in
+                start)
+                    echo "Usage: momo start"
+                    echo "Start the server."
+                    ;;
+                test)
+                    echo "Usage: momo test"
+                    echo "Run integration tests."
+                    ;;
+                update)
+                    echo "Usage: momo update"
+                    echo "Update Go dependencies."
+                    ;;
+                *)
+                    echo "Unknown command: $2"
+                    show_help
+                    ;;
+            esac
+        else
+            show_help
+        fi
+        ;;
+    *)
+        echo "Unknown command: $1"
+        show_help
+        ;;
+esac

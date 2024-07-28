@@ -1,5 +1,9 @@
 # MTN MoMo API Client for Go
 
+<p align="center">
+  <img src="./images/image.png" alt="momo-cli" />
+</p>
+
 This library provides a Go client for the MTN Mobile Money API. It allows developers to interact with the MTN MoMo API for operations like getting account balance, requesting payments, and more.
 
 ## Installation
