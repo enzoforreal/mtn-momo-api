@@ -23,7 +23,7 @@ function show_help {
     echo
     echo "The commands are:"
     echo "    start       start the server"
-    echo "    test        run integration tests"
+    echo "    test        run integration tests with optional UUID"
     echo "    update      update dependencies"
     echo
     echo "Use 'momo help <command>' for more information about a command."
@@ -36,10 +36,21 @@ function start_server {
 }
 
 function run_tests {
-    echo "Running integration tests..."
-    cd "$(dirname "$0")/../tests/integration"
+    echo "Running integration tests..."  # Message de débogage
+    script_dir="$(dirname "$0")/../tests/integration"
+    echo "Changing to script directory: $script_dir"  # Message de débogage
+    cd "$script_dir" || exit 1
+
+    auth_req_id="$1"
+    if [ -z "$auth_req_id" ]; then
+        echo "No auth_req_id provided, will be generated inside the script."  # Message de débogage
+    else
+        echo "auth_req_id passed to tests: $auth_req_id"  # Message de débogage
+    fi
+
     for test_script in *.sh; do
-        bash "$test_script"
+        echo "Running $test_script with auth_req_id: $auth_req_id"  # Message de débogage
+        bash "$test_script" "$auth_req_id"
     done
 }
 
@@ -60,34 +71,13 @@ case "$1" in
         start_server
         ;;
     test)
-        run_tests
+        run_tests "$2"
         ;;
     update)
         update_deps
         ;;
     help)
-        if [[ $# -eq 2 ]]; then
-            case "$2" in
-                start)
-                    echo "Usage: momo start"
-                    echo "Start the server."
-                    ;;
-                test)
-                    echo "Usage: momo test"
-                    echo "Run integration tests."
-                    ;;
-                update)
-                    echo "Usage: momo update"
-                    echo "Update Go dependencies."
-                    ;;
-                *)
-                    echo "Unknown command: $2"
-                    show_help
-                    ;;
-            esac
-        else
-            show_help
-        fi
+        show_help
         ;;
     *)
         echo "Unknown command: $1"

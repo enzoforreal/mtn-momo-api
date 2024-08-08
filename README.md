@@ -15,6 +15,8 @@ go get github.com/enzoforreal/mtn-momo-api
 go get github.com/gin-gonic/gin
 go get github.com/google/uuid
 go get github.com/joho/godotenv
+go get github.com/spf13/cobra
+
 
 
 ```

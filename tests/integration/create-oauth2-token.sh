@@ -38,22 +38,21 @@ if [ -z "$api_key" ]; then
     exit 1
 fi
 
-# Afficher les variables d'environnement chargées, le API_USER_ID et le API_KEY
+# Générer un UUID si non fourni
+if [ -z "$1" ]; then
+    auth_req_id=$(uuidgen)  # Générer un nouveau UUID
+    echo "Généré un nouvel auth_req_id: $auth_req_id"
+else
+    auth_req_id=$1
+    echo "auth_req_id reçu: $auth_req_id"
+fi
+
+# Afficher les variables d'environnement chargées
 echo "Variables d'environnement chargées:"
 echo "API_KEY: $api_key"
 echo "API_USER_ID: $api_user_id"
 echo "SUBSCRIPTION_KEY: $SUBSCRIPTION_KEY"
-
-# Vérifier si auth_req_id est passé en argument
-if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 auth_req_id"
-    exit 1
-fi
-
-auth_req_id=$1
-
-# Afficher auth_req_id pour vérification
-echo "auth_req_id reçu: $auth_req_id"  # Message de débogage
+echo "auth_req_id: $auth_req_id"
 
 # Exécuter la requête avec des détails de débogage
 response=$(curl -v -X POST "http://localhost:8080/create-oauth2-token" \

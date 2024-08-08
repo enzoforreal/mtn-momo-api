@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
@@ -170,6 +171,53 @@ func (c *Client) GetAuthToken() (*AuthToken, error) {
 	}
 
 	return &authToken, nil
+}
+
+func (c *Client) CreateOauth2Token(authReqID string) (*Oauth2TokenResponse, error) {
+	url := fmt.Sprintf("%s/collection/oauth2/token/", baseURL)
+
+	auth := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", c.ApiUserID, c.ApiKey)))
+	data := fmt.Sprintf("grant_type=urn:openid:params:grant-type:ciba&auth_req_id=%s", authReqID)
+
+	req, err := http.NewRequest("POST", url, strings.NewReader(data))
+	if err != nil {
+		log.Printf("Error creating request: %v", err)
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Basic %s", auth))
+	req.Header.Set("X-Target-Environment", c.Environment)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Ocp-Apim-Subscription-Key", c.SubscriptionKey)
+
+	log.Printf("Making request to %s to get oauth2 token", url)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Error making request: %v", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Error reading response body: %v", err)
+		return nil, err
+	}
+	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get oauth2 token, status code: %d, response: %s", resp.StatusCode, string(body))
+	}
+
+	var oauth2Token Oauth2TokenResponse
+	if err := json.Unmarshal(body, &oauth2Token); err != nil {
+		log.Printf("Error unmarshaling response body: %v", err)
+		return nil, err
+	}
+
+	return &oauth2Token, nil
 }
 
 func (c *Client) GetAccountBalance(token string) (*Balance, error) {

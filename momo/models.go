@@ -14,6 +14,16 @@ type AuthToken struct {
 	ExpiresIn   int    `json:"expires_in"`
 }
 
+// Structure pour l'Oauth2Token
+type Oauth2TokenResponse struct {
+	AccessToken           string `json:"access_token"`
+	TokenType             string `json:"token_type"`
+	ExpiresIn             int    `json:"expires_in"`
+	Scope                 string `json:"scope"`
+	RefreshToken          string `json:"refresh_token"`
+	RefreshTokenExpiredIn int    `json:"refresh_token_expired_in"`
+}
+
 // Structure pour les informations de balance
 type Balance struct {
 	AvailableBalance string `json:"availableBalance"`
