@@ -237,14 +237,19 @@ func getPaymentStatusHandler(c *gin.Context) {
 
 ## Explanations
 
-	Initialize the Client: The NewClient function creates a new client with your API key and target environment.
+Initialize the Client: The NewClient function creates a new client with your API key and target environment.
+
 Get an Authentication Token: The GetAuthToken function retrieves an authentication token that is required for API calls.
+
 Show Token: To confirm that the token has been successfully obtained.
+
 Get Balance from Your Account: The GetAccountBalance function retrieves the balance from your account.
 Show Balance: To see the available balance.
+
 Create a Payment Request: A sample payment request is created with the necessary details.
 Send Payment Request: The RequestToPay function sends the payment request and retrieves the result.
 Show Payment Status: To see the status of the payment request.
+
 This main.go file can be used as a practical example of library usage, showing how to authenticate, check the balance, and request payment. You can customize the details (such as your API key) and payment information to suit your needs.
 
 ## Testing
