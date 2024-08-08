@@ -56,6 +56,7 @@ func main() {
 	router.POST("/get-auth-token", getAuthTokenHandler)
 	router.GET("/get-account-balance", getAccountBalanceHandler)
 	router.POST("/request-to-pay", requestToPayHandler)
+	router.POST("/create-oauth2-token", createOauth2TokenHandler)
 
 	router.Run(":8080")
 }
@@ -183,6 +184,27 @@ func requestToPayHandler(c *gin.Context) {
 
 	c.JSON(http.StatusAccepted, gin.H{"message": "Payment request created successfully", "reference_id": referenceID})
 }
+
+func createOauth2TokenHandler(c *gin.Context) {
+	var req struct {
+		AuthReqID string `form:"auth_req_id" binding:"required"`
+	}
+	if err := c.Bind(&req); err != nil {
+		momo.HandleError(c, http.StatusBadRequest, err)
+		return
+	}
+
+	client := momo.NewClient()
+	oauth2Token, err := client.CreateOauth2Token(req.AuthReqID)
+	if err != nil {
+		momo.HandleError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Println("OAuth2 token retrieved successfully")
+	c.JSON(http.StatusOK, oauth2Token)
+}
+
 
 
 
