@@ -276,7 +276,6 @@ func (c *Client) RequestToPay(token string, request RequestToPay) (string, error
 		return "", err
 	}
 
-	// Ajout de logs pour vérifier les valeurs des en-têtes et du jeton
 	log.Printf("Token: %s", token)
 	log.Printf("Environment: %s", c.Environment)
 	log.Printf("Subscription Key: %s", c.SubscriptionKey)
@@ -315,4 +314,50 @@ func (c *Client) RequestToPay(token string, request RequestToPay) (string, error
 
 	log.Println("Payment request created successfully")
 	return referenceID, nil
+}
+
+func (c *Client) GetPaymentStatus(referenceID, token string) (*RequestToPayResult, error) {
+	url := fmt.Sprintf("%s/collection/v2_0/payment/%s", baseURL, referenceID)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Printf("Error creating request: %v", err)
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("X-Target-Environment", c.Environment)
+	req.Header.Set("Ocp-Apim-Subscription-Key", c.SubscriptionKey)
+	req.Header.Set("Cache-Control", "no-cache")
+
+	log.Printf("Making request to %s to get payment status", url)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("Error making request: %v", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Error reading response body: %v", err)
+		return nil, err
+	}
+	log.Printf("Response status: %d, body: %s", resp.StatusCode, string(body))
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get payment status, status code: %d, response: %s", resp.StatusCode, string(body))
+	}
+
+	var paymentStatus RequestToPayResult
+	if err := json.Unmarshal(body, &paymentStatus); err != nil {
+		log.Printf("Error unmarshaling response body: %v", err)
+		return nil, err
+	}
+
+	// Add logging to see what `paymentStatus` contains
+	log.Printf("Parsed payment status: %+v", paymentStatus)
+
+	return &paymentStatus, nil
 }

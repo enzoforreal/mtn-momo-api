@@ -55,7 +55,7 @@ echo "SUBSCRIPTION_KEY: $SUBSCRIPTION_KEY"
 echo "auth_req_id: $auth_req_id"
 
 # Exécuter la requête avec des détails de débogage
-response=$(curl -v -X POST "http://localhost:8080/create-oauth2-token" \
+response=$(curl -s -X POST "http://localhost:8080/create-oauth2-token" \
     -H "Authorization: Basic $(echo -n "$api_user_id:$api_key" | base64 | tr -d '\n')" \
     -H "Content-Type: application/x-www-form-urlencoded" \
     -H "X-Target-Environment: sandbox" \

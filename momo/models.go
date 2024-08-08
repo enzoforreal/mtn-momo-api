@@ -53,11 +53,10 @@ type Payer struct {
 
 // Structure pour les résultats de paiement
 type RequestToPayResult struct {
-	Amount                 string      `json:"amount"`
-	Currency               string      `json:"currency"`
-	FinancialTransactionId string      `json:"financialTransactionId"`
-	ExternalId             string      `json:"externalId"`
-	Payer                  Payer       `json:"payer"`
-	Status                 string      `json:"status"`
-	Reason                 ErrorReason `json:"reason,omitempty"`
+	ReferenceId string `json:"referenceId"`
+	Status      string `json:"status"`
+	//FinancialTransactionId string      `json:"financialTransactionId,omitempty"`
+	//ExternalId             string      `json:"externalId,omitempty"`
+	//Payer                  Payer       `json:"payer,omitempty"`
+	//Reason                 ErrorReason `json:"reason,omitempty"`
 }

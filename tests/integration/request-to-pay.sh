@@ -8,6 +8,12 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 source "$ENV_FILE"
 
+# Vérifier la disponibilité de jq
+if ! command -v jq &> /dev/null; then
+    echo "Erreur: jq n'est pas installé. Veuillez l'installer pour continuer."
+    exit 1
+fi
+
 # Fonction pour obtenir le jeton d'authentification
 get_auth_token() {
     ./tests/integration/get-auth-token.sh
@@ -50,6 +56,11 @@ fi
 reference_id=$(cat /tmp/momo_reference_id)
 echo "Reference ID: $reference_id"
 
+# Afficher les valeurs d'environnement pour le débogage
+echo "BASE_URL: $BASE_URL"
+echo "Environment: $ENVIRONMENT"
+echo "Subscription Key: $SUBSCRIPTION_KEY"
+
 # Créer la requête de paiement
 response=$(curl -s -w "\nHTTP_STATUS_CODE:%{http_code}\n" -X POST "$BASE_URL/request-to-pay" \
     -H "Authorization: Bearer $token" \
@@ -85,9 +96,33 @@ if [ "$http_status" -ne 202 ]; then
   exit 1
 fi
 
+# Vérifier si le message de succès est reçu
 if [ "$message" != "Payment request created successfully" ]; then
   echo "Erreur: la requête de paiement a échoué avec le message $message"
   exit 1
 else
   echo "Requête de paiement créée avec succès"
+
+  # Extraire 'reference_id' de la réponse JSON
+  reference_id=$(echo "$response_body" | jq -r '.reference_id')
+
+  # Vérifier et afficher le reference_id extrait
+  if [ -n "$reference_id" ]; then
+      echo "Reference ID extrait: $reference_id"
+      echo $reference_id > /tmp/X-Reference-Id-requesttopay
+  else
+      echo "Erreur: Aucun Reference ID trouvé dans la réponse"
+      exit 1
+  fi
 fi
+
+# Vérifier si le fichier a été créé avec succès
+if [ -f /tmp/X-Reference-Id-requesttopay ]; then
+    echo "Fichier X-Reference-Id-requesttopay créé avec succès."
+else
+    echo "Erreur: le fichier X-Reference-Id-requesttopay n'a pas été créé."
+    exit 1
+fi
+
+# Stocker à nouveau le token au cas où il serait utilisé plus tard
+echo $token > /tmp/momo_auth_token

@@ -1,5 +1,4 @@
 #!/bin/bash
-# Script to execute common tasks for the momo library
 
 # Function to display the ASCII Art
 function show_ascii_art {
@@ -36,22 +35,45 @@ function start_server {
 }
 
 function run_tests {
-    echo "Running integration tests..."  # Message de débogage
+    echo "Running integration tests..."
     script_dir="$(dirname "$0")/../tests/integration"
-    echo "Changing to script directory: $script_dir"  # Message de débogage
     cd "$script_dir" || exit 1
 
     auth_req_id="$1"
     if [ -z "$auth_req_id" ]; then
-        echo "No auth_req_id provided, will be generated inside the script."  # Message de débogage
+        echo "No auth_req_id provided, will be generated inside the script."
     else
-        echo "auth_req_id passed to tests: $auth_req_id"  # Message de débogage
+        echo "auth_req_id passed to tests: $auth_req_id"
     fi
 
-    for test_script in *.sh; do
-        echo "Running $test_script with auth_req_id: $auth_req_id"  # Message de débogage
-        bash "$test_script" "$auth_req_id"
+    # Array of scripts to run in order
+    scripts=(
+        "create-api-user.sh"
+        "create-api-key.sh"
+        "create-oauth2-token.sh"
+        "get-account-balance.sh"
+        "get-auth-token.sh"
+        "request-to-pay.sh"  
+        "payment-status.sh"
+    )
+
+    # Loop over scripts and execute them
+    for script in "${scripts[@]}"; do
+        echo "Running $script..."
+        bash "$script"
+
+        # Check for errors after running each script
+        if [ $? -ne 0 ]; then
+            echo "Error: $script failed to execute properly."
+            exit 1
+        fi
     done
+
+    # Verify presence of necessary files
+    if [ ! -f /tmp/X-Reference-Id-requesttopay ]; then
+      echo "Error: /tmp/X-Reference-Id-requesttopay is missing."
+      exit 1
+    fi
 }
 
 function update_deps {

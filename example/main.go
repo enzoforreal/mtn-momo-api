@@ -25,9 +25,10 @@ func main() {
 	router.POST("/create-api-user", createAPIUserHandler)
 	router.POST("/create-api-key", createAPIKeyHandler)
 	router.POST("/get-auth-token", getAuthTokenHandler)
-	router.GET("/get-account-balance", getAccountBalanceHandler)
 	router.POST("/request-to-pay", requestToPayHandler)
 	router.POST("/create-oauth2-token", createOauth2TokenHandler)
+	router.GET("/payment-status/:reference_id", getPaymentStatusHandler)
+	router.GET("/get-account-balance", getAccountBalanceHandler)
 
 	router.Run(":8080")
 }
@@ -174,4 +175,29 @@ func createOauth2TokenHandler(c *gin.Context) {
 
 	log.Println("OAuth2 token retrieved successfully")
 	c.JSON(http.StatusOK, oauth2Token)
+}
+
+func getPaymentStatusHandler(c *gin.Context) {
+	client := momo.NewClient()
+	token := c.GetHeader("Authorization")
+	if token == "" {
+		momo.HandleError(c, http.StatusBadRequest, "Authorization header missing")
+		return
+	}
+	token = strings.TrimPrefix(token, "Bearer ")
+
+	referenceID := c.Param("reference_id")
+	if referenceID == "" {
+		momo.HandleError(c, http.StatusBadRequest, "Reference ID is required")
+		return
+	}
+
+	paymentStatus, err := client.GetPaymentStatus(referenceID, token)
+	if err != nil {
+		momo.HandleError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Printf("Payment status for reference ID %s retrieved successfully", referenceID)
+	c.JSON(http.StatusOK, paymentStatus)
 }
