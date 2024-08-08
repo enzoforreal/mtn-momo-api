@@ -54,9 +54,10 @@ func main() {
 	router.POST("/create-api-user", createAPIUserHandler)
 	router.POST("/create-api-key", createAPIKeyHandler)
 	router.POST("/get-auth-token", getAuthTokenHandler)
-	router.GET("/get-account-balance", getAccountBalanceHandler)
 	router.POST("/request-to-pay", requestToPayHandler)
 	router.POST("/create-oauth2-token", createOauth2TokenHandler)
+	router.GET("/payment-status/:reference_id", getPaymentStatusHandler)
+	router.GET("/get-account-balance", getAccountBalanceHandler)
 
 	router.Run(":8080")
 }
@@ -205,102 +206,74 @@ func createOauth2TokenHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, oauth2Token)
 }
 
+func getPaymentStatusHandler(c *gin.Context) {
+	client := momo.NewClient()
+	token := c.GetHeader("Authorization")
+	if token == "" {
+		momo.HandleError(c, http.StatusBadRequest, "Authorization header missing")
+		return
+	}
+	token = strings.TrimPrefix(token, "Bearer ")
 
+	referenceID := c.Param("reference_id")
+	if referenceID == "" {
+		momo.HandleError(c, http.StatusBadRequest, "Reference ID is required")
+		return
+	}
 
+	paymentStatus, err := client.GetPaymentStatus(referenceID, token)
+	if err != nil {
+		momo.HandleError(c, http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Printf("Payment status for reference ID %s retrieved successfully", referenceID)
+	c.JSON(http.StatusOK, paymentStatus)
+}
 
 
 ```
 
-## Endpoint documentation 
-
-1. Create API User
-
-
-```curl
-
-curl -X POST http://localhost:8080/create-api-user \
-    -H "X-Reference-Id: your-X-Reference-id" \
-    -H "Content-Type: application/json" \
-    -H "Ocp-Apim-Subscription-Key: Your-Subscription-Key" \
-    -d '{
-          "callback_host": "https://your_callback_host.ngrok-free.app"
-        }'
-
-```
-2. Create API Key
-
-```curl
-
-curl -X POST http://localhost:8080/create-api-key \
-    -H "Content-Type: application/json" \
-    -d '{
-          "reference_id": "your-reference-id"
-        }'
-
-```
-
-3. Create Access Token
-
-```curl
-
-curl -X POST "http://localhost:8080/get-auth-token" \
-    -H "Authorization: Basic your-base64-encoded-auth" \
-    -H "Content-Type: application/json" \
-    -H "Ocp-Apim-Subscription-Key: Your-Subscription-Key"
-```
-
-4. Get Account banlance
-
-```curl
-   curl -X GET http://localhost:8080/get-account-balance \
-    -H "Content-Type: application/json" \
-    -H "Authorization: your-access-token" \
-	-H "X-Target-Environment: X_TARGET_ENVIRONMENT" \ (replace with sandbox or mtncotedivoire or mtncongo ...)
-    -H "Cache-Control: no-cache" \
-    -H "Ocp-Apim-Subscription-Key: Your-Subscription-Key" \
-```
-
-5. Create Request to pay
-
-```curl
-curl -X POST http://localhost:8080/request-to-pay \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer your-access-token" \
-    -d '{
-          "amount": "100",
-          "currency": "EUR",
-          "external_id": "7890",
-          "payer": {
-              "party_id_type": "MSISDN",
-              "party_id": "1234567890"
-          },
-          "payer_message": "Payment for services",
-          "payee_note": "Thank you for your service"
-        }'
-```
 
 ## Explanations
 
-	Initialize the client: The NewClient function creates a new client with your API key and target environment.
-	Get an authentication token: The GetAuthToken function retrieves an authentication token that is required for API calls.
-	Show token: To confirm that the token has been successfully obtained.
-	Get the balance from your account: The GetAccountBalance feature retrieves the balance from your account.
-	Show balance: To see the available balance.
-	Create a payment request: A sample payment request is created with the necessary details.
-	Send payment request: The RequestToPay function sends the payment request and retrieves the result.
-	Show payment status: To see the status of the payment request.
-
-This main.go file can be used as a practical example of library usage, showing how to authenticate, check the balance, and request payment. You can customize the details (such as your-api-key) and payment information to suit your needs.
+	Initialize the Client: The NewClient function creates a new client with your API key and target environment.
+Get an Authentication Token: The GetAuthToken function retrieves an authentication token that is required for API calls.
+Show Token: To confirm that the token has been successfully obtained.
+Get Balance from Your Account: The GetAccountBalance function retrieves the balance from your account.
+Show Balance: To see the available balance.
+Create a Payment Request: A sample payment request is created with the necessary details.
+Send Payment Request: The RequestToPay function sends the payment request and retrieves the result.
+Show Payment Status: To see the status of the payment request.
+This main.go file can be used as a practical example of library usage, showing how to authenticate, check the balance, and request payment. You can customize the details (such as your API key) and payment information to suit your needs.
 
 ## Testing
 
-To run the tests, use the go test command:
+To run the integration tests, you can use the CLI that comes with this library. The test command allows you to execute all your integration tests with a single command.
+
+Running the CLI
+
+You can start the CLI application by running:
 
 ```bash
 
-go test -v -cover ./...
+./momo-cli
 
 ```
+
+To execute all integration tests with:
+
+```bash
+
+./momo-cli test
+
+
+```
+
+This command will automatically run all the integration tests defined in your codebase.
+
+
+
 
 ## Useful Links
 
@@ -320,35 +293,42 @@ This project is licensed under the MIT License.
 mtn-momo-api/
 ├── LICENSE
 ├── README.md
+├── cmd
+│   ├── root.go
+│   ├── start.go
+│   ├── test.go
+│   └── update.go
 ├── example
-│   └── main.go
+│   └── main.go
 ├── go.mod
 ├── go.sum
 ├── integration.env
 ├── momo
-│   ├── client.go
-│   ├── client_test.go
-│   ├── errors.go
-│   └── models.go
+│   ├── client.go
+│   ├── client_test.go
+│   ├── errors.go
+│   └── models.go
 ├── test.env
 └── tests
     ├── integration
-    │   ├── create-api-key.sh
-    │   ├── create-api-user.sh
-    │   ├── get-account-balance .sh
-    │   ├── get-auth-token.sh
-    │   └── request-to-pay.sh
+    │   ├── create-api-key.sh
+    │   ├── create-api-user.sh
+    │   ├── get-account-balance.sh
+    │   ├── get-auth-token.sh
+    │   ├── payment-status.sh
+    │   └── request-to-pay.sh
     └── run_integration_tests.sh
+
 ```
 
 
 
 ## Summary
 
-	Installation: Clear instructions on how to install the library.
-	Usage: A concrete example of using the library, complete with explanations for each step.
-	Endpoint Documentation: curl commands to use during your tests.
-	Explanations: Detailed descriptions of the functionality.
-	Testing: Command to run unit tests.
-	License: Project license type.
-	Project Structure: Overview of the structure of the project files and directories.
+Installation: Clear instructions on how to install the library.
+Usage: A concrete example of using the library, complete with explanations for each step.
+Endpoint Documentation: curl commands to use during your tests.
+Explanations: Detailed descriptions of the functionality.
+Testing: Command to run unit tests.
+License: Project license type.
+Project Structure: Overview of the structure of the project files and directories.
